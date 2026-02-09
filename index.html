@@ -1,107 +1,644 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
-  <title>N1X // TUNNELCORE</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>N1X | TUNNELCORE</title>
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts - VT323 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+    /* ==========================================
+       CSS VARIABLES - Easy color customization
+       ========================================== */
+    :root {
+      --neon-green: #00ff41;
+      --cyan-accent: #00ffff;
+      --glitch-red: #ff0051;
+      --glitch-blue: #00d4ff;
+      --bg-black: #000000;
+      --scanline-opacity: 0.08;
+    }
     
-    html, body {
-      height: 100%;
+    /* ==========================================
+       BASE STYLES
+       ========================================== */
+    * {
       margin: 0;
       padding: 0;
-      overflow-y: auto;          /* Enable vertical scroll */
-      overscroll-behavior: none; /* No elastic bounce */
-      touch-action: pan-y pinch-zoom; /* Allow vertical swipe + pinch zoom, block horizontal/other junk */
+      box-sizing: border-box;
+    }
+    
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    body {
       font-family: 'VT323', monospace;
-      background: #000;
-      color: #00ff41;
+      background: var(--bg-black);
+      color: var(--neon-green);
       overflow-x: hidden;
+      position: relative;
+      /* CRITICAL: Allow touch scrolling on mobile */
+      touch-action: pan-y pinch-zoom;
     }
-
-    #matrix {
-      touch-action: none;        /* Canvas ignores touch gestures → scroll passes through */
-      pointer-events: none;      /* Bonus: clicks/touches go through canvas to content below if needed */
+    
+    /* ==========================================
+       MATRIX RAIN CANVAS
+       ========================================== */
+    #matrix-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.7;
+      /* CRITICAL: Don't block touch events on mobile */
+      pointer-events: none;
+      touch-action: none;
     }
-
-    .glitch { 
-      position: relative; 
-      animation: glitch-skew 4s infinite linear alternate-reverse; 
+    
+    /* ==========================================
+       SCANLINE CRT EFFECT
+       ========================================== */
+    .scanlines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      opacity: var(--scanline-opacity);
     }
-    @keyframes glitch-skew {
-      0%,100% { transform: skew(0deg); }
-      10% { transform: skew(1deg); }
-      20% { transform: skew(-1deg); }
+    
+    /* ==========================================
+       CONTENT WRAPPER - Above background
+       ========================================== */
+    .content-wrapper {
+      position: relative;
+      z-index: 10;
     }
-    .scanlines::before {
-      content: "";
+    
+    /* ==========================================
+       NAVIGATION BAR
+       ========================================== */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.9);
+      border-bottom: 1px solid var(--neon-green);
+      backdrop-filter: blur(10px);
+    }
+    
+    nav a {
+      color: var(--neon-green);
+      text-decoration: none;
+      font-size: 18px;
+      letter-spacing: 2px;
+      padding: 16px 20px;
+      display: inline-block;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    nav a:hover {
+      color: var(--cyan-accent);
+      text-shadow: 0 0 10px var(--cyan-accent), 0 0 20px var(--cyan-accent);
+      transform: translateY(-2px);
+    }
+    
+    /* ==========================================
+       GLITCH EFFECT - RGB Split on hover/active
+       ========================================== */
+    .glitch {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .glitch.active::before,
+    .glitch.active::after {
+      content: attr(data-text);
       position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(transparent 0px, transparent 2px, rgba(0,255,65,0.04) 2px, rgba(0,255,65,0.04) 4px);
-      pointer-events: none; z-index: 20;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.8;
     }
-    .crt { filter: brightness(1.15) contrast(1.25); box-shadow: inset 0 0 120px #000; }
-    .card:hover { animation: glitch-intense 0.3s infinite; border-color: #00ff41 !important; }
-    @keyframes glitch-intense {
-      0% { transform: translate(0); }
-      20% { transform: translate(-2px, 2px); }
-      40% { transform: translate(2px, -2px); }
-      60% { transform: translate(-1px, 1px); }
-      80% { transform: translate(1px, -1px); }
-      100% { transform: translate(0); }
+    
+    .glitch.active::before {
+      animation: glitch-1 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+      color: var(--glitch-red);
+      z-index: -1;
     }
-    .nav-link:hover { text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41; }
+    
+    .glitch.active::after {
+      animation: glitch-2 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both infinite;
+      color: var(--glitch-blue);
+      z-index: -2;
+    }
+    
+    @keyframes glitch-1 {
+      0%, 100% { transform: translate(0); }
+      33% { transform: translate(-3px, 3px) skew(2deg); }
+      66% { transform: translate(3px, -2px) skew(-1deg); }
+    }
+    
+    @keyframes glitch-2 {
+      0%, 100% { transform: translate(0); }
+      33% { transform: translate(3px, -3px) skew(-2deg); }
+      66% { transform: translate(-3px, 2px) skew(1deg); }
+    }
+    
+    /* ==========================================
+       HERO SECTION STYLES
+       ========================================== */
+    .hero-title {
+      font-size: clamp(80px, 15vw, 200px);
+      font-weight: bold;
+      line-height: 0.9;
+      letter-spacing: 10px;
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% {
+        text-shadow: 0 0 20px var(--neon-green), 0 0 40px var(--neon-green);
+      }
+      50% {
+        text-shadow: 0 0 30px var(--neon-green), 0 0 60px var(--neon-green), 0 0 80px var(--neon-green);
+      }
+    }
+    
+    /* ==========================================
+       BLINKING CURSOR
+       ========================================== */
+    .cursor {
+      display: inline-block;
+      width: 12px;
+      height: 1em;
+      background: var(--neon-green);
+      margin-left: 4px;
+      animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    
+    /* ==========================================
+       CARD STYLES - Video containers
+       ========================================== */
+    .card {
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid var(--neon-green);
+      padding: 20px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, var(--neon-green), var(--cyan-accent));
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.3s ease;
+    }
+    
+    .card:hover {
+      border-color: var(--cyan-accent);
+      box-shadow: 0 0 30px rgba(0, 255, 65, 0.4);
+      transform: translateY(-5px);
+    }
+    
+    .card:hover::before {
+      opacity: 0.3;
+    }
+    
+    /* Hover glitch intensification */
+    .card:hover .glitch-hover {
+      animation: card-glitch 0.3s infinite;
+    }
+    
+    @keyframes card-glitch {
+      0%, 100% { transform: translate(0); }
+      25% { transform: translate(-2px, 2px); }
+      50% { transform: translate(2px, -2px); }
+      75% { transform: translate(-2px, -2px); }
+    }
+    
+    /* ==========================================
+       SECTION HEADINGS
+       ========================================== */
+    .section-title {
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: bold;
+      letter-spacing: 4px;
+      margin-bottom: 40px;
+      position: relative;
+      display: inline-block;
+    }
+    
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--neon-green), transparent);
+    }
+    
+    /* ==========================================
+       VIDEO EMBEDS - Responsive aspect ratio
+       ========================================== */
+    .video-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* 16:9 aspect ratio */
+      height: 0;
+      overflow: hidden;
+      border: 2px solid var(--neon-green);
+      border-radius: 4px;
+    }
+    
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    /* ==========================================
+       SUBSECTION HEADINGS
+       ========================================== */
+    .subsection-title {
+      font-size: clamp(32px, 6vw, 64px);
+      letter-spacing: 3px;
+      margin: 60px 0 30px 0;
+      color: var(--cyan-accent);
+      text-shadow: 0 0 10px var(--cyan-accent);
+    }
+    
+    /* ==========================================
+       LINK STYLES
+       ========================================== */
+    a.cyber-link {
+      color: var(--neon-green);
+      text-decoration: none;
+      font-size: 24px;
+      letter-spacing: 2px;
+      padding: 12px 24px;
+      border: 2px solid var(--neon-green);
+      display: inline-block;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    a.cyber-link::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: var(--neon-green);
+      transform: translate(-50%, -50%);
+      transition: width 0.3s ease, height 0.3s ease;
+      z-index: -1;
+    }
+    
+    a.cyber-link:hover {
+      color: var(--bg-black);
+      border-color: var(--cyan-accent);
+      box-shadow: 0 0 20px var(--neon-green);
+    }
+    
+    a.cyber-link:hover::before {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* ==========================================
+       MOBILE RESPONSIVENESS
+       ========================================== */
+    @media (max-width: 768px) {
+      nav a {
+        font-size: 14px;
+        padding: 12px 10px;
+        letter-spacing: 1px;
+      }
+      
+      .hero-title {
+        letter-spacing: 5px;
+      }
+      
+      .section-title {
+        letter-spacing: 2px;
+      }
+      
+      .subsection-title {
+        letter-spacing: 2px;
+      }
+      
+      .card {
+        padding: 15px;
+      }
+    }
+    
+    /* ==========================================
+       TYPING ANIMATION
+       ========================================== */
+    .typing-text {
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid var(--neon-green);
+      animation: typing 4s steps(40) 1s forwards;
+    }
+    
+    @keyframes typing {
+      from { width: 0; }
+      to { width: 100%; }
+    }
   </style>
 </head>
-<body class="min-h-screen bg-black text-[#00ff41] relative scanlines crt">
-
-  <!-- Fixed Nav Bar -->
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 border-b border-[#00ff41]/50 backdrop-blur-sm py-4 px-6 flex justify-center space-x-12 text-xl glitch">
-    <a href="#hero" class="nav-link hover:text-cyan-400 transition">HOME</a>
-    <a href="#synths" class="nav-link hover:text-cyan-400 transition">SYNTHS</a>
-    <a href="#analogs" class="nav-link hover:text-cyan-400 transition">ANALOGS & HYBRIDS</a>
-    <a href="#connect" class="nav-link hover:text-cyan-400 transition">CONNECT</a>
-  </nav>
-
-  <!-- Matrix Rain Canvas -->
-  <canvas id="matrix" class="absolute inset-0 z-0 opacity-90"></canvas>
-
-  <div class="relative z-10 pt-24 px-4 pb-24 max-w-6xl mx-auto space-y-24">
-
-    <!-- Hero / Boot Sequence -->
-    <section id="hero" class="text-center">
-      <div class="text-xl md:text-2xl mb-4 animate-blink">[BOOT SEQUENCE INITIATED...]</div>
-      <h1 class="text-7xl md:text-10xl font-bold glitch tracking-widest animate-pulse">
-        N1X
-      </h1>
-      <p class="text-3xl md:text-5xl mt-4 glitch">TUNNELCORE // AUGMENTED PROTOCOL</p>
-      <div class="mt-8 text-2xl glitch">> SYSTEM ONLINE // NO RETURN VECTOR DETECTED</div>
+<body>
+  <!-- ==========================================
+       MATRIX RAIN CANVAS BACKGROUND
+       ========================================== -->
+  <canvas id="matrix-canvas"></canvas>
+  
+  <!-- ==========================================
+       SCANLINE OVERLAY
+       ========================================== -->
+  <div class="scanlines"></div>
+  
+  <!-- ==========================================
+       CONTENT WRAPPER
+       ========================================== -->
+  <div class="content-wrapper">
+    <!-- ==========================================
+         NAVIGATION BAR
+         ========================================== -->
+    <nav>
+      <div class="max-w-7xl mx-auto px-4 flex justify-center md:justify-start gap-4 md:gap-8 flex-wrap">
+        <a href="#hero">HOME</a>
+        <a href="#synths">SYNTHS</a>
+        <a href="#analogs">ANALOGUES & HYBRIDS</a>
+        <a href="#connect">CONNECT</a>
+      </div>
+    </nav>
+    
+    <!-- ==========================================
+         HERO SECTION
+         ========================================== -->
+    <section id="hero" class="min-h-screen flex flex-col justify-center items-center px-4 pt-20">
+      <h1 class="hero-title glitch active text-center" data-text="N1X">N1X</h1>
+      <p class="text-2xl md:text-4xl mt-6 mb-8 text-center tracking-widest">
+        TUNNELCORE // AUGMENTED PROTOCOL
+      </p>
+      <div class="text-lg md:text-xl max-w-2xl text-center">
+        <span class="typing-text inline-block">
+          &gt; SYSTEM INITIALIZED... LOADING CYBORG CONSCIOUSNESS...
+        </span>
+        <span class="cursor"></span>
+      </div>
     </section>
-
-    <!-- Synths Section -->
-    <section id="synths" class="space-y-16">
-      <h2 class="text-6xl text-center glitch">SYNTHS</h2>
+    
+    <!-- ==========================================
+         SYNTHS SECTION - Albums, EP, Singles
+         ========================================== -->
+    <section id="synths" class="min-h-screen px-4 py-20 max-w-7xl mx-auto">
+      <h2 class="section-title glitch active" data-text="SYNTHS">SYNTHS</h2>
       
-      <div class="space-y-20">
-        <!-- Albums -->
-        <div>
-          <h3 class="text-5xl glitch mb-8 text-center md:text-left">ALBUMS</h3>
-          <div class="grid grid-cols-1 gap-10">
-            <div class="bg-black/70 border border-[#00ff41]/40 p-8 rounded-xl card transition-all duration-300 glitch">
-              <h4 class="text-3xl mb-4">[AUGMENTED] - N1X (Full Album Stream)</h4>
-              <p class="text-xl opacity-90 mb-6">Industrial trap metal concept: cyborg awakening → cosmic sovereignty.</p>
-              <div class="aspect-video rounded-lg overflow-hidden border border-[#00ff41]/30">
-                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/RNcBFuhp1pY" title="[AUGMENTED] - N1X (Full Album Stream)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-              </div>
-            </div>
+      <!-- ALBUMS Subsection -->
+      <div class="subsection">
+        <h3 class="subsection-title glitch active" data-text="// ALBUMS">[[ ALBUMS ]]</h3>
+        
+        <div class="card mb-8">
+          <h4 class="text-2xl md:text-3xl mb-4 glitch-hover">[AUGMENTED] - N1X (Full Album Stream)</h4>
+          <p class="text-lg mb-4 opacity-80">
+            Industrial trap metal concept: cyborg awakening → cosmic sovereignty.
+          </p>
+          <div class="video-container">
+            <iframe 
+              src="https://www.youtube.com/embed/RNcBFuhp1pY" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen>
+            </iframe>
           </div>
         </div>
-
-        <!-- EP -->
-        <div>
-          <h3 class="text-5xl glitch mb-8 text-center md:text-left">EP</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div class="bg-black/70 border border-[#00ff41]/40 p-8 rounded-xl card transition-all duration-300 glitch">
-              <h4 class="text-3
+      </div>
+      
+      <!-- EP Subsection -->
+      <div class="subsection">
+        <h3 class="subsection-title glitch active" data-text="// EP">[[ EP ]]</h3>
+        
+        <div class="card mb-8">
+          <h4 class="text-2xl md:text-3xl mb-4 glitch-hover">Split Brain (Film Score)</h4>
+          <div class="video-container">
+            <iframe 
+              src="https://www.youtube.com/embed/HQnENsnGfME" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen>
+            </iframe>
+          </div>
+        </div>
+        
+        <div class="card mb-8">
+          <h4 class="text-2xl md:text-3xl mb-4 glitch-hover">Get Hell Bent (Film Score)</h4>
+          <div class="video-container">
+            <iframe 
+              src="https://www.youtube.com/embed/6Ch2n75lFok" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen>
+            </iframe>
+          </div>
+        </div>
+      </div>
+      
+      <!-- SINGLES Subsection -->
+      <div class="subsection">
+        <h3 class="subsection-title glitch active" data-text="// SINGLES">[[ SINGLES ]]</h3>
+        
+        <div class="card mb-8">
+          <h4 class="text-2xl md:text-3xl mb-4 glitch-hover">GIGERCORE</h4>
+          <div class="video-container">
+            <iframe 
+              src="https://www.youtube.com/embed/ocSBtaKbGIc" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen>
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- ==========================================
+         ANALOGUES & HYBRIDS SECTION
+         ========================================== -->
+    <section id="analogs" class="min-h-screen px-4 py-20 max-w-7xl mx-auto">
+      <h2 class="section-title glitch active" data-text="ANALOGUES & HYBRIDS">ANALOGUES & HYBRIDS</h2>
+      
+      <div class="card max-w-4xl">
+        <p class="text-xl md:text-2xl leading-relaxed opacity-90">
+          &gt; INCOMING TRANSMISSION...
+        </p>
+        <p class="text-lg md:text-xl mt-6 leading-relaxed opacity-80">
+          Exploring the intersection of biomechanical synthesis and organic decay. 
+          Inspired by H.R. Giger's xenomorphic architecture and the entropy of analog systems.
+          Human creativity merging with machine intelligence.
+        </p>
+        <p class="text-lg md:text-xl mt-6 leading-relaxed opacity-80">
+          This sector is currently under construction. 
+          Hybrid protocols initializing...
+        </p>
+        <p class="text-xl md:text-2xl mt-8 text-cyan-400">
+          &gt; STATUS: COMING SOON_
+        </p>
+      </div>
+    </section>
+    
+    <!-- ==========================================
+         CONNECT SECTION
+         ========================================== -->
+    <section id="connect" class="min-h-screen px-4 py-20 max-w-7xl mx-auto flex flex-col justify-center items-center">
+      <h2 class="section-title glitch active text-center mb-12" data-text="CONNECT">CONNECT</h2>
+      
+      <div class="text-center">
+        <p class="text-xl md:text-2xl mb-8 opacity-90">
+          &gt; ESTABLISH UPLINK TO MAIN TRANSMISSION NODE
+        </p>
+        <a 
+          href="https://youtube.com/@lvtunnelcore" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          class="cyber-link"
+        >
+          YOUTUBE // @LVTUNNELCORE
+        </a>
+      </div>
+      
+      <div class="mt-20 text-center opacity-50">
+        <p class="text-lg">↑↑↓↓←→←→BA</p>
+        <p class="text-sm mt-2">01001110 01001001 01011000</p>
+      </div>
+    </section>
+  </div>
+  
+  <!-- ==========================================
+       MATRIX RAIN JAVASCRIPT
+       Adjust speed, columns, characters here
+       ========================================== -->
+  <script>
+    // Get canvas and context
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Matrix characters - Katakana, numbers, symbols
+    const chars = 'ｦｱｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>[]{}|/\\@#$%^&*';
+    const charArray = chars.split('');
+    
+    // Settings - CUSTOMIZE HERE
+    const fontSize = 16;
+    const columnCount = Math.floor(canvas.width / fontSize);
+    const drops = [];
+    
+    // Initialize drops (starting Y position for each column)
+    for (let i = 0; i < columnCount; i++) {
+      drops[i] = Math.floor(Math.random() * canvas.height / fontSize);
+    }
+    
+    // Draw function
+    function draw() {
+      // Fade effect - creates the trail
+      // Adjust alpha (0.05) for longer/shorter trails
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Matrix green color
+      ctx.fillStyle = '#00ff41';
+      ctx.font = `${fontSize}px VT323`;
+      
+      // Draw characters in each column
+      for (let i = 0; i < drops.length; i++) {
+        // Random character
+        const char = charArray[Math.floor(Math.random() * charArray.length)];
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+        
+        ctx.fillText(char, x, y);
+        
+        // Reset drop to top randomly
+        if (y > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        
+        // Move drop down
+        drops[i]++;
+      }
+    }
+    
+    // Animation interval - Adjust timing here (lower = faster)
+    // 40ms = ~25fps for performance balance
+    setInterval(draw, 40);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+    
+    // ==========================================
+    // GLITCH EFFECT TRIGGERS
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initial glitch on page load
+      const glitchElements = document.querySelectorAll('.glitch.active');
+      
+      // Add random glitch bursts
+      setInterval(() => {
+        const randomElement = glitchElements[Math.floor(Math.random() * glitchElements.length)];
+        if (randomElement) {
+          randomElement.style.animation = 'none';
+          setTimeout(() => {
+            randomElement.style.animation = '';
+          }, 10);
+        }
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
