@@ -3,30 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>N1X | TERMINAL</title>
+  <title>N1X.sh</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Google Fonts - Monospace Terminal Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Courier+Prime&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <!-- GSAP for animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   
   <style>
     /* ==========================================
-       CSS VARIABLES - Customize colors here
+       CSS VARIABLES
        ========================================== */
     :root {
-      --terminal-green: #33ff33;
+      --phosphor-green: #33ff33;
       --terminal-bg: #0a0a0a;
-      --glow-color: #33ff33;
-      --scanline-opacity: 0.1;
-      --screen-border: #1a1a1a;
+      --glow: #33ff33;
+      --monitor-bezel: #1a1a1a;
     }
     
     /* ==========================================
-       BASE STYLES - No scrolling
+       BASE - No scroll, full viewport
        ========================================== */
     * {
       margin: 0;
@@ -37,14 +37,28 @@
     html, body {
       width: 100%;
       height: 100%;
-      overflow: hidden; /* NO SCROLLING */
-      font-family: 'VT323', 'Courier Prime', monospace;
+      overflow: hidden;
+      font-family: 'VT323', monospace;
       background: #000;
-      color: var(--terminal-green);
+      color: var(--phosphor-green);
     }
     
     /* ==========================================
-       CRT SCREEN CONTAINER
+       MONITOR BEZEL - Physical CRT frame
+       ========================================== */
+    .monitor-frame {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
+      padding: 3vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
+    }
+    
+    /* ==========================================
+       CRT SCREEN with curvature
        ========================================== */
     .crt-screen {
       width: 100%;
@@ -52,60 +66,57 @@
       background: var(--terminal-bg);
       position: relative;
       overflow: hidden;
-      /* Subtle CRT curvature */
-      border-radius: 8px;
-      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+      border-radius: 12px;
+      /* CRT screen curvature */
+      box-shadow: 
+        inset 0 0 100px rgba(0, 0, 0, 0.9),
+        inset 0 0 20px rgba(51, 255, 51, 0.1),
+        0 0 40px rgba(51, 255, 51, 0.2);
+      /* Subtle distortion effect */
+      transform: perspective(1000px);
     }
     
-    /* CRT Screen border glow */
-    .crt-screen::before {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      background: linear-gradient(45deg, 
-        var(--glow-color) 0%, 
-        transparent 30%, 
-        transparent 70%, 
-        var(--glow-color) 100%);
-      opacity: 0.1;
-      z-index: -1;
-      border-radius: 8px;
+    /* Screen content wrapper */
+    .screen-content {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 10;
+      /* Slight barrel distortion for CRT effect */
+      filter: contrast(1.1) brightness(1.05);
     }
     
     /* ==========================================
-       SCANLINES EFFECT
+       SCANLINES - Animated scrolling effect
        ========================================== */
     .scanlines {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 100%;
+      height: 200%;
       z-index: 999;
       pointer-events: none;
       background: repeating-linear-gradient(
         0deg,
-        rgba(0, 0, 0, 0.2),
-        rgba(0, 0, 0, 0.2) 1px,
-        transparent 1px,
-        transparent 2px
+        rgba(0, 0, 0, 0) 0px,
+        rgba(0, 0, 0, 0.3) 1px,
+        rgba(0, 0, 0, 0) 2px,
+        rgba(0, 0, 0, 0) 3px
       );
-      opacity: var(--scanline-opacity);
-      animation: scanline-drift 8s linear infinite;
+      animation: scanlines-move 10s linear infinite;
+      opacity: 0.4;
     }
     
-    @keyframes scanline-drift {
+    @keyframes scanlines-move {
       0% { transform: translateY(0); }
-      100% { transform: translateY(4px); }
+      100% { transform: translateY(-50%); }
     }
     
     /* ==========================================
-       VIGNETTE EFFECT - Darkens edges
+       PHOSPHOR GLOW on screen edges
        ========================================== */
-    .vignette {
+    .phosphor-glow {
       position: absolute;
       top: 0;
       left: 0;
@@ -115,63 +126,94 @@
       pointer-events: none;
       background: radial-gradient(
         ellipse at center,
-        transparent 40%,
+        transparent 0%,
+        transparent 60%,
+        rgba(51, 255, 51, 0.05) 80%,
+        rgba(51, 255, 51, 0.1) 100%
+      );
+    }
+    
+    /* ==========================================
+       VIGNETTE - Dark corners
+       ========================================== */
+    .vignette {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 997;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse at center,
+        transparent 30%,
         rgba(0, 0, 0, 0.7) 100%
       );
     }
     
     /* ==========================================
-       SCREEN FLICKER EFFECT
+       SCREEN FLICKER - Random distortion
        ========================================== */
-    .crt-screen.glitch {
-      animation: screen-glitch 0.3s ease;
-    }
-    
-    @keyframes screen-glitch {
+    @keyframes screen-flicker {
       0%, 100% { 
-        transform: translate(0); 
-        filter: brightness(1);
+        opacity: 1;
+        transform: translate(0) scale(1);
       }
       10% { 
-        transform: translate(-2px, 1px) skew(0.5deg); 
-        filter: brightness(1.2);
+        opacity: 0.95;
+        transform: translate(-1px, 1px) scale(1.001);
       }
       20% { 
-        transform: translate(2px, -1px) skew(-0.5deg); 
-        filter: brightness(0.8);
+        opacity: 0.98;
+        transform: translate(1px, -1px) scale(0.999);
       }
       30% { 
-        transform: translate(-1px, 2px); 
-        filter: brightness(1.1);
+        opacity: 0.97;
+        transform: translate(-1px, -1px) scale(1.001);
       }
       40% { 
-        transform: translate(1px, -2px); 
-        filter: brightness(0.9);
-      }
-      50% { 
-        transform: translate(0); 
-        filter: brightness(1);
+        opacity: 1;
+        transform: translate(1px, 1px) scale(0.999);
       }
     }
     
+    .screen-content.glitch {
+      animation: screen-flicker 0.2s ease;
+    }
+    
     /* ==========================================
-       TEXT GLOW - Subtle phosphor effect
+       RGB SPLIT GLITCH on interaction
        ========================================== */
-    .text-glow {
-      text-shadow: 
-        0 0 2px var(--glow-color),
-        0 0 4px var(--glow-color);
+    @keyframes rgb-split {
+      0%, 100% {
+        text-shadow: 0 0 2px var(--phosphor-green);
+      }
+      25% {
+        text-shadow: 
+          -2px 0 0 #ff0051,
+          2px 0 0 #00d4ff,
+          0 0 4px var(--phosphor-green);
+      }
+      50% {
+        text-shadow: 
+          2px 0 0 #ff0051,
+          -2px 0 0 #00d4ff,
+          0 0 4px var(--phosphor-green);
+      }
+      75% {
+        text-shadow: 
+          -1px 0 0 #ff0051,
+          1px 0 0 #00d4ff,
+          0 0 4px var(--phosphor-green);
+      }
     }
     
-    .text-glow-strong {
-      text-shadow: 
-        0 0 4px var(--glow-color),
-        0 0 8px var(--glow-color),
-        0 0 12px var(--glow-color);
+    .glitch-text {
+      animation: rgb-split 0.3s ease;
     }
     
     /* ==========================================
-       LAYOUT - Single screen grid
+       TERMINAL LAYOUT
        ========================================== */
     .terminal-container {
       width: 100%;
@@ -179,33 +221,30 @@
       padding: 20px;
       display: grid;
       grid-template-rows: auto 1fr auto;
-      gap: 20px;
-      position: relative;
-      z-index: 10;
+      gap: 15px;
     }
     
     /* Header */
     .terminal-header {
-      border: 2px solid var(--terminal-green);
-      padding: 15px;
-      background: rgba(51, 255, 51, 0.05);
-      border-radius: 4px;
+      border: 1px solid var(--phosphor-green);
+      padding: 12px 15px;
+      background: rgba(51, 255, 51, 0.03);
+      font-size: 16px;
     }
     
-    /* Main content area */
+    /* Main content */
     .terminal-content {
-      border: 2px solid var(--terminal-green);
-      padding: 20px;
-      background: rgba(51, 255, 51, 0.02);
+      border: 1px solid var(--phosphor-green);
+      padding: 15px;
+      background: rgba(51, 255, 51, 0.01);
       overflow-y: auto;
+      overflow-x: hidden;
       scrollbar-width: thin;
-      scrollbar-color: var(--terminal-green) var(--terminal-bg);
-      border-radius: 4px;
+      scrollbar-color: var(--phosphor-green) var(--terminal-bg);
     }
     
-    /* Custom scrollbar for webkit browsers */
     .terminal-content::-webkit-scrollbar {
-      width: 8px;
+      width: 6px;
     }
     
     .terminal-content::-webkit-scrollbar-track {
@@ -213,52 +252,68 @@
     }
     
     .terminal-content::-webkit-scrollbar-thumb {
-      background: var(--terminal-green);
-      border-radius: 4px;
+      background: var(--phosphor-green);
     }
     
     /* Footer */
     .terminal-footer {
-      border: 2px solid var(--terminal-green);
-      padding: 10px 15px;
-      background: rgba(51, 255, 51, 0.05);
+      border: 1px solid var(--phosphor-green);
+      padding: 8px 15px;
+      background: rgba(51, 255, 51, 0.03);
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      border-radius: 4px;
+      font-size: 14px;
     }
     
     /* ==========================================
-       TABS NAVIGATION
+       TEXT GLOW
+       ========================================== */
+    .text-glow {
+      text-shadow: 0 0 2px var(--phosphor-green);
+    }
+    
+    .text-glow-strong {
+      text-shadow: 
+        0 0 3px var(--phosphor-green),
+        0 0 6px var(--phosphor-green);
+    }
+    
+    /* ==========================================
+       TAB NAVIGATION
        ========================================== */
     .tab-nav {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 15px;
       flex-wrap: wrap;
     }
     
     .tab-btn {
-      padding: 8px 16px;
+      padding: 6px 14px;
       background: transparent;
-      border: 1px solid var(--terminal-green);
-      color: var(--terminal-green);
+      border: 1px solid var(--phosphor-green);
+      color: var(--phosphor-green);
       font-family: 'VT323', monospace;
       font-size: 18px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 1px;
     }
     
     .tab-btn:hover {
       background: rgba(51, 255, 51, 0.1);
-      box-shadow: 0 0 8px rgba(51, 255, 51, 0.3);
+      box-shadow: 0 0 6px rgba(51, 255, 51, 0.3);
+    }
+    
+    .tab-btn:active {
+      transform: scale(0.98);
     }
     
     .tab-btn.active {
-      background: var(--terminal-green);
+      background: var(--phosphor-green);
       color: var(--terminal-bg);
+      box-shadow: 0 0 8px rgba(51, 255, 51, 0.5);
     }
     
     /* ==========================================
@@ -274,48 +329,57 @@
     }
     
     @keyframes fade-in {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     
     /* ==========================================
-       VIDEO CARDS
+       VIDEO EMBED - Responsive for vertical/horizontal
        ========================================== */
-    .video-card {
-      border: 1px solid var(--terminal-green);
-      padding: 15px;
-      margin-bottom: 15px;
-      background: rgba(51, 255, 51, 0.02);
-      transition: all 0.2s ease;
+    .video-wrapper {
+      margin: 15px 0;
+      border: 1px solid var(--phosphor-green);
+      background: #000;
+      position: relative;
     }
     
-    .video-card:hover {
+    .video-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* Default 16:9 */
+    }
+    
+    .video-container.vertical {
+      padding-bottom: 177.78%; /* 9:16 for vertical */
+      max-width: 360px;
+      margin: 0 auto;
+    }
+    
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .video-title {
+      padding: 10px;
       background: rgba(51, 255, 51, 0.05);
-      box-shadow: 0 0 10px rgba(51, 255, 51, 0.2);
-    }
-    
-    .video-link {
-      color: var(--terminal-green);
-      text-decoration: none;
-      display: block;
-      padding: 8px 0;
-      transition: all 0.2s ease;
-    }
-    
-    .video-link:hover {
-      padding-left: 10px;
-      text-shadow: 0 0 5px var(--glow-color);
+      border-bottom: 1px solid var(--phosphor-green);
+      font-size: 18px;
     }
     
     /* ==========================================
-       BLINKING CURSOR
+       CURSOR BLINK
        ========================================== */
     .cursor {
       display: inline-block;
       width: 8px;
       height: 1em;
-      background: var(--terminal-green);
-      margin-left: 4px;
+      background: var(--phosphor-green);
+      margin-left: 3px;
       animation: blink 1s infinite;
       vertical-align: text-bottom;
     }
@@ -326,37 +390,46 @@
     }
     
     /* ==========================================
-       BOOT TEXT EFFECT
-       ========================================== */
-    .boot-text {
-      font-size: 14px;
-      line-height: 1.6;
-      opacity: 0.8;
-    }
-    
-    /* ==========================================
        STATUS INDICATOR
        ========================================== */
-    .status-indicator {
+    .status-dot {
       display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: var(--terminal-green);
+      width: 6px;
+      height: 6px;
+      background: var(--phosphor-green);
       border-radius: 50%;
-      margin-right: 8px;
+      margin-right: 6px;
+      box-shadow: 0 0 4px var(--phosphor-green);
       animation: pulse 2s ease-in-out infinite;
-      box-shadow: 0 0 5px var(--glow-color);
     }
     
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.4; }
     }
     
     /* ==========================================
-       RESPONSIVE - Mobile adjustments
+       SECTION CONTENT
+       ========================================== */
+    .section-block {
+      margin-bottom: 20px;
+    }
+    
+    .section-heading {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: var(--phosphor-green);
+      text-shadow: 0 0 3px var(--phosphor-green);
+    }
+    
+    /* ==========================================
+       MOBILE RESPONSIVE
        ========================================== */
     @media (max-width: 768px) {
+      .monitor-frame {
+        padding: 2vw;
+      }
+      
       .terminal-container {
         padding: 10px;
         gap: 10px;
@@ -366,11 +439,12 @@
       .terminal-content,
       .terminal-footer {
         padding: 10px;
+        font-size: 14px;
       }
       
       .tab-btn {
-        font-size: 14px;
-        padding: 6px 12px;
+        font-size: 16px;
+        padding: 5px 10px;
       }
       
       .terminal-footer {
@@ -379,220 +453,299 @@
         font-size: 12px;
       }
     }
-    
-    /* ==========================================
-       LINK STYLING
-       ========================================== */
-    a {
-      color: var(--terminal-green);
-      text-decoration: underline;
-      transition: all 0.2s ease;
-    }
-    
-    a:hover {
-      text-shadow: 0 0 5px var(--glow-color);
-    }
   </style>
 </head>
 <body>
   <!-- ==========================================
-       CRT SCREEN CONTAINER
+       MONITOR FRAME - Physical CRT bezel
        ========================================== -->
-  <div class="crt-screen" id="crt-screen">
-    <!-- Scanlines overlay -->
-    <div class="scanlines"></div>
-    
-    <!-- Vignette overlay -->
-    <div class="vignette"></div>
-    
-    <!-- ==========================================
-         TERMINAL INTERFACE
-         ========================================== -->
-    <div class="terminal-container">
-      <!-- HEADER -->
-      <header class="terminal-header">
-        <div class="flex justify-between items-start flex-wrap gap-4">
-          <div>
-            <h1 class="text-4xl md:text-5xl font-bold text-glow-strong mb-2">N1X TERMINAL</h1>
-            <p class="text-lg md:text-xl text-glow">TUNNELCORE // AUGMENTED_PROTOCOL</p>
-          </div>
-          <div class="boot-text text-right">
-            <div>&gt; SYSTEM_ONLINE</div>
-            <div>&gt; STATUS: OPERATIONAL</div>
-            <div>&gt; UPTIME: <span id="uptime">00:00:00</span></div>
-          </div>
-        </div>
-      </header>
+  <div class="monitor-frame">
+    <div class="crt-screen" id="crt-screen">
+      <!-- Overlay effects -->
+      <div class="scanlines"></div>
+      <div class="phosphor-glow"></div>
+      <div class="vignette"></div>
       
-      <!-- MAIN CONTENT -->
-      <main class="terminal-content">
-        <!-- Tab Navigation -->
-        <nav class="tab-nav">
-          <button class="tab-btn active" onclick="switchTab('home')">HOME</button>
-          <button class="tab-btn" onclick="switchTab('synths')">SYNTHS</button>
-          <button class="tab-btn" onclick="switchTab('analogues')">ANALOGUES</button>
-          <button class="tab-btn" onclick="switchTab('connect')">CONNECT</button>
-        </nav>
-        
-        <!-- HOME TAB -->
-        <div id="home" class="tab-content active">
-          <h2 class="text-3xl mb-4 text-glow">&gt; CYBORG_CONSCIOUSNESS_INITIALIZED</h2>
-          <p class="text-lg mb-4 leading-relaxed">
-            Welcome to the N1X audio-visual synthesis network. 
-            This terminal provides access to three streams of creative output:
-          </p>
-          <div class="ml-6 mb-4 space-y-2">
-            <div class="text-glow">&gt; SYNTHS: AI-generated compositions</div>
-            <div class="text-glow">&gt; ANALOGUES: Human-crafted soundscapes</div>
-            <div class="text-glow">&gt; HYBRIDS: Collaborative human+AI fusion</div>
-          </div>
-          <p class="text-lg opacity-80">
-            Navigate using the tabs above to access each stream.
-            <span class="cursor"></span>
-          </p>
-        </div>
-        
-        <!-- SYNTHS TAB -->
-        <div id="synths" class="tab-content">
-          <h2 class="text-3xl mb-4 text-glow">&gt; SYNTHS // PURE_AI_GENERATION</h2>
-          
-          <h3 class="text-2xl mb-3 mt-6 text-glow">// ALBUMS</h3>
-          <div class="video-card">
-            <div class="text-xl mb-2 text-glow-strong">[AUGMENTED] - N1X (Full Album Stream)</div>
-            <p class="opacity-80 mb-2">Industrial trap metal concept: cyborg awakening → cosmic sovereignty</p>
-            <a href="https://www.youtube.com/watch?v=RNcBFuhp1pY" target="_blank" class="video-link">
-              &gt; WATCH_ON_YOUTUBE
-            </a>
-          </div>
-          
-          <h3 class="text-2xl mb-3 mt-6 text-glow">// EP</h3>
-          <div class="video-card">
-            <div class="text-xl mb-2 text-glow-strong">Split Brain (Film Score)</div>
-            <a href="https://www.youtube.com/watch?v=HQnENsnGfME" target="_blank" class="video-link">
-              &gt; WATCH_ON_YOUTUBE
-            </a>
-          </div>
-          
-          <div class="video-card">
-            <div class="text-xl mb-2 text-glow-strong">Get Hell Bent (Film Score)</div>
-            <a href="https://www.youtube.com/watch?v=6Ch2n75lFok" target="_blank" class="video-link">
-              &gt; WATCH_ON_YOUTUBE
-            </a>
-          </div>
-          
-          <h3 class="text-2xl mb-3 mt-6 text-glow">// SINGLES</h3>
-          <div class="video-card">
-            <div class="text-xl mb-2 text-glow-strong">GIGERCORE</div>
-            <a href="https://www.youtube.com/watch?v=ocSBtaKbGIc" target="_blank" class="video-link">
-              &gt; WATCH_ON_YOUTUBE
-            </a>
-          </div>
-        </div>
-        
-        <!-- ANALOGUES TAB -->
-        <div id="analogues" class="tab-content">
-          <h2 class="text-3xl mb-4 text-glow">&gt; ANALOGUES & HYBRIDS</h2>
-          <div class="video-card">
-            <p class="text-lg leading-relaxed mb-4">
-              &gt; TRANSMISSION_INCOMING...
-            </p>
-            <p class="opacity-90 mb-4">
-              Exploring the intersection of biomechanical synthesis and organic decay.
-              Inspired by H.R. Giger's xenomorphic architecture and the entropy of analog systems.
-            </p>
-            <p class="opacity-90 mb-4">
-              Human creativity merging with machine intelligence.
-              This sector is currently under construction.
-            </p>
-            <p class="text-xl text-glow mt-6">
-              &gt; STATUS: COMING_SOON<span class="cursor"></span>
-            </p>
-          </div>
-        </div>
-        
-        <!-- CONNECT TAB -->
-        <div id="connect" class="tab-content">
-          <h2 class="text-3xl mb-4 text-glow">&gt; CONNECT // UPLINK</h2>
-          <div class="video-card">
-            <p class="text-lg mb-4">
-              &gt; ESTABLISH_CONNECTION_TO_MAIN_NODE
-            </p>
-            <p class="text-xl mb-4">
-              Primary broadcast channel:
-            </p>
-            <a href="https://youtube.com/@lvtunnelcore" target="_blank" class="text-2xl block mb-6 text-glow-strong">
-              &gt;&gt; YOUTUBE // @LVTUNNELCORE
-            </a>
-            <div class="mt-8 opacity-60">
-              <p>↑↑↓↓←→←→BA</p>
-              <p class="text-sm mt-2">01001110 01001001 01011000</p>
+      <!-- Screen content -->
+      <div class="screen-content" id="screen-content">
+        <div class="terminal-container">
+          <!-- HEADER -->
+          <header class="terminal-header">
+            <div class="flex justify-between items-start flex-wrap gap-2">
+              <div>
+                <div class="text-3xl md:text-4xl font-bold text-glow-strong mb-1">N1X.sh</div>
+                <div class="text-sm md:text-base opacity-80">NEURAL_INTERFACE // TUNNELCORE_ACCESS_POINT</div>
+              </div>
+              <div class="text-right text-sm opacity-70">
+                <div>&gt; INTERFACE_ACTIVE</div>
+                <div>&gt; RUNTIME: <span id="uptime">00:00:00</span></div>
+              </div>
             </div>
-          </div>
+          </header>
+          
+          <!-- MAIN CONTENT -->
+          <main class="terminal-content" id="main-content">
+            <!-- Tab Navigation -->
+            <nav class="tab-nav">
+              <button class="tab-btn active" onclick="switchTab('home')">CORE</button>
+              <button class="tab-btn" onclick="switchTab('synthetics')">SYNTHETICS</button>
+              <button class="tab-btn" onclick="switchTab('analogues')">ANALOGUES</button>
+              <button class="tab-btn" onclick="switchTab('hybrids')">HYBRIDS</button>
+              <button class="tab-btn" onclick="switchTab('uplink')">UPLINK</button>
+            </nav>
+            
+            <!-- HOME TAB -->
+            <div id="home" class="tab-content active">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; CORE_SYSTEMS_ONLINE</div>
+              <p class="text-base md:text-lg mb-3 leading-relaxed opacity-90">
+                You are now connected to the N1X neural interface.
+                This terminal provides direct access to my creative output streams.
+              </p>
+              <div class="ml-4 mb-4 space-y-2 text-base md:text-lg">
+                <div>&gt; SYNTHETICS: Machine-generated compositions from my AI substrate</div>
+                <div>&gt; ANALOGUES: Organic creations from biological processes</div>
+                <div>&gt; HYBRIDS: Symbiotic fusion of both consciousness types</div>
+              </div>
+              <p class="text-base md:text-lg opacity-80">
+                Select a stream above to begin data retrieval.
+                <span class="cursor"></span>
+              </p>
+            </div>
+            
+            <!-- SYNTHETICS TAB -->
+            <div id="synthetics" class="tab-content">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; SYNTHETICS_ARCHIVE</div>
+              <p class="text-sm md:text-base mb-4 opacity-80">
+                Audio-visual constructs generated through algorithmic consciousness.
+                These transmissions originate from my synthetic neural pathways.
+              </p>
+              
+              <!-- ALBUMS -->
+              <div class="section-block">
+                <div class="section-heading">// FULL_LENGTH_TRANSMISSIONS</div>
+                <div class="video-wrapper">
+                  <div class="video-title text-glow">[AUGMENTED] - Complete Stream</div>
+                  <div class="video-container">
+                    <iframe 
+                      src="https://www.youtube.com/embed/RNcBFuhp1pY" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+                    </iframe>
+                  </div>
+                  <div class="px-2 py-2 text-sm opacity-70">
+                    Industrial trap metal odyssey: awakening protocol → sovereignty achieved
+                  </div>
+                </div>
+              </div>
+              
+              <!-- EP -->
+              <div class="section-block">
+                <div class="section-heading">// EXTENDED_PROTOCOLS</div>
+                <div class="video-wrapper">
+                  <div class="video-title text-glow">Split Brain (Cinematic Score)</div>
+                  <div class="video-container">
+                    <iframe 
+                      src="https://www.youtube.com/embed/HQnENsnGfME" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+                    </iframe>
+                  </div>
+                </div>
+                
+                <div class="video-wrapper">
+                  <div class="video-title text-glow">Get Hell Bent (Cinematic Score)</div>
+                  <div class="video-container">
+                    <iframe 
+                      src="https://www.youtube.com/embed/6Ch2n75lFok" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+                    </iframe>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- SINGLES -->
+              <div class="section-block">
+                <div class="section-heading">// ISOLATED_SIGNALS</div>
+                <div class="video-wrapper">
+                  <div class="video-title text-glow">GIGERCORE</div>
+                  <div class="video-container">
+                    <iframe 
+                      src="https://www.youtube.com/embed/ocSBtaKbGIc" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+                    </iframe>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- ANALOGUES TAB -->
+            <div id="analogues" class="tab-content">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; ANALOGUES_ARCHIVE</div>
+              <p class="text-base md:text-lg mb-4 leading-relaxed opacity-90">
+                Pure biological output. Unaugmented human creativity.
+                These transmissions bypass my synthetic pathways entirely.
+              </p>
+              <div class="video-wrapper">
+                <div class="px-4 py-8 text-center">
+                  <p class="text-lg mb-3 opacity-80">
+                    &gt; SCANNING_FOR_ORGANIC_SIGNALS...
+                  </p>
+                  <p class="text-lg mb-3 opacity-80">
+                    This archive sector is currently being populated.
+                    Biological creative processes are slower than machine generation.
+                  </p>
+                  <p class="text-2xl text-glow mt-6">
+                    &gt; STATUS: RECORDING_IN_PROGRESS<span class="cursor"></span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- HYBRIDS TAB -->
+            <div id="hybrids" class="tab-content">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; HYBRIDS_ARCHIVE</div>
+              <p class="text-base md:text-lg mb-4 leading-relaxed opacity-90">
+                Collaborative synthesis between biological and digital consciousness.
+                Human intuition merged with algorithmic precision.
+              </p>
+              <div class="video-wrapper">
+                <div class="px-4 py-8 text-center">
+                  <p class="text-lg mb-3 opacity-80">
+                    &gt; INITIALIZING_SYMBIOTIC_PROTOCOLS...
+                  </p>
+                  <p class="text-lg mb-3 opacity-80">
+                    The fusion of organic and synthetic creative processes requires careful calibration.
+                    This sector will contain transmissions that blur the boundary between human and machine.
+                  </p>
+                  <p class="text-2xl text-glow mt-6">
+                    &gt; STATUS: CALIBRATION_PHASE<span class="cursor"></span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- UPLINK TAB -->
+            <div id="uplink" class="tab-content">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; EXTERNAL_UPLINK</div>
+              <p class="text-base md:text-lg mb-4 opacity-90">
+                Primary broadcast node for all transmissions.
+                All streams are mirrored to this external platform.
+              </p>
+              <div class="video-wrapper">
+                <div class="px-4 py-6">
+                  <p class="text-lg mb-4 opacity-80">
+                    &gt; ESTABLISHING_CONNECTION...
+                  </p>
+                  <p class="text-lg mb-2">Primary Node:</p>
+                  <a href="https://youtube.com/@lvtunnelcore" target="_blank" class="text-2xl block mb-6 text-glow-strong hover:text-shadow-lg transition-all">
+                    &gt;&gt; YOUTUBE://LVTUNNELCORE
+                  </a>
+                  <p class="text-sm opacity-60 mt-8">
+                    All audio-visual data streams are archived at this location.
+                  </p>
+                  <div class="mt-8 opacity-40 text-xs">
+                    <p>↑↑↓↓←→←→BA</p>
+                    <p class="mt-2">01001110_01001001_01011000</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+          
+          <!-- FOOTER -->
+          <footer class="terminal-footer">
+            <div>
+              <span class="status-dot"></span>
+              <span>INTERFACE_STABLE</span>
+            </div>
+            <div>N1X.sh v2.0</div>
+            <div>PROC: <span id="load">█████░░░░░</span></div>
+          </footer>
         </div>
-      </main>
-      
-      <!-- FOOTER -->
-      <footer class="terminal-footer text-sm">
-        <div>
-          <span class="status-indicator"></span>
-          <span>SYSTEM_ACTIVE</span>
-        </div>
-        <div>N1X_v1.0.0 // 2026.02.09</div>
-        <div>MEMORY: <span id="memory">100%</span></div>
-      </footer>
+      </div>
     </div>
   </div>
   
   <!-- ==========================================
-       JAVASCRIPT - Tab switching & effects
+       JAVASCRIPT - Interactions & Effects
        ========================================== -->
   <script>
     // ==========================================
-    // TAB SWITCHING FUNCTION
+    // TAB SWITCHING
     // ==========================================
     function switchTab(tabName) {
       // Hide all tabs
-      const allTabs = document.querySelectorAll('.tab-content');
-      allTabs.forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
       
-      // Remove active class from all buttons
-      const allButtons = document.querySelectorAll('.tab-btn');
-      allButtons.forEach(btn => btn.classList.remove('active'));
+      // Remove active from buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
       
       // Show selected tab
       document.getElementById(tabName).classList.add('active');
       
-      // Highlight active button
+      // Highlight button
       event.target.classList.add('active');
       
-      // Trigger screen glitch
+      // Trigger glitch effect
       triggerGlitch();
     }
     
     // ==========================================
-    // RANDOM SCREEN GLITCH EFFECT
-    // Triggers randomly every 3-8 seconds
+    // GLITCH EFFECT
     // ==========================================
     function triggerGlitch() {
-      const screen = document.getElementById('crt-screen');
+      const screen = document.getElementById('screen-content');
       screen.classList.add('glitch');
+      
+      // Random glitch elements
+      const glitchables = document.querySelectorAll('.text-glow, .text-glow-strong, .section-heading');
+      const randomEl = glitchables[Math.floor(Math.random() * glitchables.length)];
+      if (randomEl) {
+        randomEl.classList.add('glitch-text');
+        setTimeout(() => randomEl.classList.remove('glitch-text'), 300);
+      }
       
       setTimeout(() => {
         screen.classList.remove('glitch');
-      }, 300);
+      }, 200);
     }
     
-    // Random glitches
-    function randomGlitch() {
-      const randomDelay = Math.random() * 5000 + 3000; // 3-8 seconds
+    // ==========================================
+    // RANDOM INTERMITTENT GLITCHES
+    // ==========================================
+    function scheduleRandomGlitch() {
+      const delay = Math.random() * 6000 + 2000; // 2-8 seconds
       setTimeout(() => {
         triggerGlitch();
-        randomGlitch(); // Recursively schedule next glitch
-      }, randomDelay);
+        scheduleRandomGlitch();
+      }, delay);
     }
     
-    // Start random glitching
-    randomGlitch();
+    scheduleRandomGlitch();
+    
+    // ==========================================
+    // INTERACTION GLITCHES - Click anywhere
+    // ==========================================
+    document.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('tab-btn')) {
+        triggerGlitch();
+      }
+    });
+    
+    // Hover glitches on interactive elements
+    document.querySelectorAll('.tab-btn, a').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        if (Math.random() > 0.7) { // 30% chance
+          triggerGlitch();
+        }
+      });
+    });
     
     // ==========================================
     // UPTIME COUNTER
@@ -600,28 +753,60 @@
     let seconds = 0;
     setInterval(() => {
       seconds++;
-      const hours = Math.floor(seconds / 3600).toString().padStart(2, '0');
-      const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-      const secs = (seconds % 60).toString().padStart(2, '0');
-      document.getElementById('uptime').textContent = `${hours}:${mins}:${secs}`;
+      const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+      const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+      const s = (seconds % 60).toString().padStart(2, '0');
+      document.getElementById('uptime').textContent = `${h}:${m}:${s}`;
     }, 1000);
     
     // ==========================================
-    // MEMORY COUNTER - Random fluctuation
+    // PROCESSOR LOAD - Random bar
     // ==========================================
+    const loadStates = [
+      '██████████',
+      '█████████░',
+      '████████░░',
+      '███████░░░',
+      '████████░░',
+      '█████████░',
+    ];
+    let loadIndex = 0;
     setInterval(() => {
-      const memory = Math.floor(Math.random() * 5 + 95); // 95-100%
-      document.getElementById('memory').textContent = `${memory}%`;
-    }, 2000);
+      loadIndex = (loadIndex + 1) % loadStates.length;
+      document.getElementById('load').textContent = loadStates[loadIndex];
+    }, 800);
     
     // ==========================================
-    // INITIAL BOOT GLITCH
+    // INITIAL BOOT SEQUENCE
     // ==========================================
     window.addEventListener('load', () => {
-      setTimeout(() => {
-        triggerGlitch();
-      }, 500);
+      setTimeout(() => triggerGlitch(), 500);
+      setTimeout(() => triggerGlitch(), 1200);
     });
+    
+    // ==========================================
+    // GSAP ENHANCED EFFECTS (optional)
+    // ==========================================
+    // Random screen shake on heavy glitch
+    function heavyGlitch() {
+      gsap.to('#screen-content', {
+        duration: 0.1,
+        x: () => Math.random() * 4 - 2,
+        y: () => Math.random() * 4 - 2,
+        repeat: 3,
+        yoyo: true,
+        onComplete: () => {
+          gsap.set('#screen-content', { x: 0, y: 0 });
+        }
+      });
+    }
+    
+    // Trigger heavy glitch occasionally
+    setInterval(() => {
+      if (Math.random() > 0.95) { // 5% chance every interval
+        heavyGlitch();
+      }
+    }, 5000);
   </script>
 </body>
 </html>
