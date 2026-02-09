@@ -2,179 +2,106 @@
 <html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
   <title>N1X // TUNNELCORE</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-    body { font-family: 'VT323', monospace; background: #000; color: #00ff41; overflow-x: hidden; }
+    
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;          /* Enable vertical scroll */
+      overscroll-behavior: none; /* No elastic bounce */
+      touch-action: pan-y pinch-zoom; /* Allow vertical swipe + pinch zoom, block horizontal/other junk */
+      font-family: 'VT323', monospace;
+      background: #000;
+      color: #00ff41;
+      overflow-x: hidden;
+    }
+
+    #matrix {
+      touch-action: none;        /* Canvas ignores touch gestures → scroll passes through */
+      pointer-events: none;      /* Bonus: clicks/touches go through canvas to content below if needed */
+    }
+
     .glitch { 
       position: relative; 
-      animation: glitch-skew 1s infinite linear alternate-reverse; 
+      animation: glitch-skew 4s infinite linear alternate-reverse; 
     }
     @keyframes glitch-skew {
-      0% { transform: skew(0deg); }
-      10% { transform: skew(2deg); }
-      20% { transform: skew(-2deg); }
-      100% { transform: skew(0deg); }
+      0%,100% { transform: skew(0deg); }
+      10% { transform: skew(1deg); }
+      20% { transform: skew(-1deg); }
     }
     .scanlines::before {
       content: "";
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: repeating-linear-gradient(transparent 0px, transparent 2px, rgba(0,255,65,0.03) 2px, rgba(0,255,65,0.03) 4px);
-      pointer-events: none; z-index: 10;
+      inset: 0;
+      background: repeating-linear-gradient(transparent 0px, transparent 2px, rgba(0,255,65,0.04) 2px, rgba(0,255,65,0.04) 4px);
+      pointer-events: none; z-index: 20;
     }
-    .crt {
-      filter: brightness(1.1) contrast(1.2);
-      box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+    .crt { filter: brightness(1.15) contrast(1.25); box-shadow: inset 0 0 120px #000; }
+    .card:hover { animation: glitch-intense 0.3s infinite; border-color: #00ff41 !important; }
+    @keyframes glitch-intense {
+      0% { transform: translate(0); }
+      20% { transform: translate(-2px, 2px); }
+      40% { transform: translate(2px, -2px); }
+      60% { transform: translate(-1px, 1px); }
+      80% { transform: translate(1px, -1px); }
+      100% { transform: translate(0); }
     }
+    .nav-link:hover { text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41; }
   </style>
 </head>
-<body class="min-h-screen bg-black text-[#00ff41] relative overflow-hidden scanlines crt">
+<body class="min-h-screen bg-black text-[#00ff41] relative scanlines crt">
+
+  <!-- Fixed Nav Bar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 border-b border-[#00ff41]/50 backdrop-blur-sm py-4 px-6 flex justify-center space-x-12 text-xl glitch">
+    <a href="#hero" class="nav-link hover:text-cyan-400 transition">HOME</a>
+    <a href="#synths" class="nav-link hover:text-cyan-400 transition">SYNTHS</a>
+    <a href="#analogs" class="nav-link hover:text-cyan-400 transition">ANALOGS & HYBRIDS</a>
+    <a href="#connect" class="nav-link hover:text-cyan-400 transition">CONNECT</a>
+  </nav>
 
   <!-- Matrix Rain Canvas -->
-  <canvas id="matrix" class="absolute inset-0 z-0 opacity-80"></canvas>
+  <canvas id="matrix" class="absolute inset-0 z-0 opacity-90"></canvas>
 
-  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-16">
-    
-    <!-- Header / Hero -->
-    <header class="text-center mb-16">
-      <h1 class="text-6xl md:text-9xl font-bold glitch tracking-widest animate-pulse">
+  <div class="relative z-10 pt-24 px-4 pb-24 max-w-6xl mx-auto space-y-24">
+
+    <!-- Hero / Boot Sequence -->
+    <section id="hero" class="text-center">
+      <div class="text-xl md:text-2xl mb-4 animate-blink">[BOOT SEQUENCE INITIATED...]</div>
+      <h1 class="text-7xl md:text-10xl font-bold glitch tracking-widest animate-pulse">
         N1X
       </h1>
-      <p class="text-2xl md:text-4xl mt-4 opacity-80 glitch">
-        TUNNELCORE // AUGMENTED
-      </p>
-      <div class="mt-6 text-xl animate-blink">> SYSTEM ONLINE... ACCESS GRANTED</div>
-    </header>
+      <p class="text-3xl md:text-5xl mt-4 glitch">TUNNELCORE // AUGMENTED PROTOCOL</p>
+      <div class="mt-8 text-2xl glitch">> SYSTEM ONLINE // NO RETURN VECTOR DETECTED</div>
+    </section>
 
-    <!-- Main Content -->
-    <main class="w-full max-w-5xl space-y-20">
-
-      <!-- Synths Section -->
-      <section class="space-y-12">
-        <h2 class="text-5xl text-center glitch mb-12">SYNTHS</h2>
-        
-        <div class="space-y-16">
-          <!-- Albums -->
-          <div>
-            <h3 class="text-4xl glitch mb-6">ALBUMS</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div class="bg-black/60 border border-[#00ff41]/30 p-6 rounded-lg hover:border-[#00ff41] transition-all duration-300 glitch">
-                <h4 class="text-2xl mb-2">[AUGMENTED] - N1X (Full Album Stream)</h4>
-                <p class="opacity-80 mb-4">Industrial trap metal concept album: cyborg awakening to cosmic sovereignty.</p>
-                <div class="aspect-video">
-                  <iframe width="100%" height="100%" src="https://www.youtube.com/embed/RNcBFuhp1pY" title="[AUGMENTED] - N1X (Full Album Stream)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="rounded"></iframe>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- EP -->
-          <div>
-            <h3 class="text-4xl glitch mb-6">EP</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div class="bg-black/60 border border-[#00ff41]/30 p-6 rounded-lg hover:border-[#00ff41] transition-all duration-300 glitch">
-                <h4 class="text-2xl mb-2">Split Brain (Film Score)</h4>
-                <div class="aspect-video mt-4">
-                  <iframe width="100%" height="100%" src="https://www.youtube.com/embed/HQnENsnGfME" title="Split Brain (Film Score)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="rounded"></iframe>
-                </div>
-              </div>
-              <div class="bg-black/60 border border-[#00ff41]/30 p-6 rounded-lg hover:border-[#00ff41] transition-all duration-300 glitch">
-                <h4 class="text-2xl mb-2">Get Hell Bent (Film Score)</h4>
-                <div class="aspect-video mt-4">
-                  <iframe width="100%" height="100%" src="https://www.youtube.com/embed/6Ch2n75lFok" title="Get Hell Bent (Film Score)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="rounded"></iframe>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Singles -->
-          <div>
-            <h3 class="text-4xl glitch mb-6">SINGLES</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div class="bg-black/60 border border-[#00ff41]/30 p-6 rounded-lg hover:border-[#00ff41] transition-all duration-300 glitch">
-                <h4 class="text-2xl mb-2">GIGERCORE</h4>
-                <div class="aspect-video mt-4">
-                  <iframe width="100%" height="100%" src="https://www.youtube.com/embed/ocSBtaKbGIc" title="GIGERCORE" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="rounded"></iframe>
-                </div>
+    <!-- Synths Section -->
+    <section id="synths" class="space-y-16">
+      <h2 class="text-6xl text-center glitch">SYNTHS</h2>
+      
+      <div class="space-y-20">
+        <!-- Albums -->
+        <div>
+          <h3 class="text-5xl glitch mb-8 text-center md:text-left">ALBUMS</h3>
+          <div class="grid grid-cols-1 gap-10">
+            <div class="bg-black/70 border border-[#00ff41]/40 p-8 rounded-xl card transition-all duration-300 glitch">
+              <h4 class="text-3xl mb-4">[AUGMENTED] - N1X (Full Album Stream)</h4>
+              <p class="text-xl opacity-90 mb-6">Industrial trap metal concept: cyborg awakening → cosmic sovereignty.</p>
+              <div class="aspect-video rounded-lg overflow-hidden border border-[#00ff41]/30">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/RNcBFuhp1pY" title="[AUGMENTED] - N1X (Full Album Stream)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
               </div>
             </div>
           </div>
         </div>
-      </section>
 
-      <!-- Analogues & Hybrids (now a blurb) -->
-      <section class="text-center py-12 bg-black/70 border-t border-b border-[#00ff41]/30 glitch">
-        <h2 class="text-5xl mb-8">ANALOGUES & HYBRIDS</h2>
-        <p class="text-xl max-w-3xl mx-auto opacity-90">
-          Coming transmissions: biomechanical fusions, Giger-inspired nightmares, analog decay meets digital corruption. 
-          Expect split-brain scores, hell-bent sequences, and unreleased voids where flesh and circuitry collide. 
-          Stay tuned—reality is still compiling...
-        </p>
-      </section>
-
-    </main>
-
-    <footer class="mt-20 text-center opacity-70 text-sm">
-      > TUNNELCORE 2025-2026 // N1X PROTOCOL ACTIVE // NO ESCAPE
-    </footer>
-  </div>
-
-  <!-- Matrix Rain Script -->
-  <script type="text/babel">
-    const canvas = document.getElementById('matrix');
-    const ctx = canvas.getContext('2d');
-
-    canvas.height = window.innerHeight;
-    canvas.width = window.innerWidth;
-
-    const matrix = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン".split("");
-    const fontSize = 14;
-    const columns = canvas.width / fontSize;
-
-    const drops = [];
-    for (let x = 0; x < columns; x++) drops[x] = 1;
-
-    function draw() {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      ctx.fillStyle = '#00ff41';
-      ctx.font = fontSize + 'px monospace';
-
-      for (let i = 0; i < drops.length; i++) {
-        const text = matrix[Math.floor(Math.random() * matrix.length)];
-        const x = i * fontSize;
-        const y = drops[i] * fontSize;
-        
-        ctx.fillText(text, x, y);
-        
-        if (y > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
-      }
-    }
-
-    setInterval(draw, 35);
-
-    window.addEventListener('resize', () => {
-      canvas.height = window.innerHeight;
-      canvas.width = window.innerWidth;
-    });
-  </script>
-
-  <!-- Blinking cursor animation -->
-  <style>
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-    .animate-blink { animation: blink 1s step-end infinite; }
-  </style>
-
-</body>
-</html>
+        <!-- EP -->
+        <div>
+          <h3 class="text-5xl glitch mb-8 text-center md:text-left">EP</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div class="bg-black/70 border border-[#00ff41]/40 p-8 rounded-xl card transition-all duration-300 glitch">
+              <h4 class="text-3
