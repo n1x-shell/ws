@@ -1,418 +1,835 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>N1X.sh – NEURAL UPLINK ACTIVE</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>N1X.sh</title>
+  <!-- Open Graph – immersive in-world cyberpunk terminal style -->
+<meta property="og:title" content="N1X.sh – NEURAL UPLINK ACTIVE" />
+<meta property="og:description" content=">> TRANSMISSION RECEIVED. Access TUNNELCORE streams: [AUGMENTED] cyborg sovereignty protocol, cinematic neural fractures, GIGERCORE signal. Synthetics compiling. Analogues pending. Hybrids awakening. ENTER? <Y/N>" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://n1x.sh" /> <!-- Update to your real live URL -->
+<meta property="og:site_name" content="N1X.sh" />
 
-  <meta property="og:title" content="N1X.sh – NEURAL UPLINK ACTIVE" />
-  <meta property="og:description" content=">> TRANSMISSION RECEIVED. Access TUNNELCORE streams: [AUGMENTED] cyborg sovereignty protocol, cinematic neural fractures, GIGERCORE signal." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://n1x.sh" />
-  <meta name="twitter:card" content="summary_large_image" />
 
+<!-- Extras for compatibility & X/Twitter bonus previews -->
+<meta property="og:locale" content="en_US" />
+<meta name="twitter:card" content="summary_large_image" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-
-  <!-- PixiJS CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.5.2/pixi.min.js"></script>
-
+  
+  <!-- GSAP for animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
+    /* ==========================================
+       CSS VARIABLES
+       ========================================== */
+    :root {
+      --phosphor-green: #33ff33;
+      --terminal-bg: #0a0a0a;
+      --glow: #33ff33;
+      --monitor-bezel: #1a1a1a;
+    }
+    
+    /* ==========================================
+       BASE - No scroll, full viewport
+       ========================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     html, body {
-      width:100%; height:100%; overflow:hidden; background:#000;
-      font-family: 'VT323', monospace; color:#33ff33;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'VT323', monospace;
+      background: #000;
+      color: var(--phosphor-green);
     }
-    #monitor-frame {
-      width:100%; height:100%;
-      background: linear-gradient(135deg, #2a2a2a, #1a1a1a, #0a0a0a);
-      padding: 2.5vmin;
-      display: flex; align-items: center; justify-content: center;
+    
+    /* ==========================================
+       MONITOR BEZEL - Physical CRT frame
+       ========================================== */
+    .monitor-frame {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
+      padding: 3vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
     }
-    #crt-container {
-      width:100%; height:100%; position:relative; overflow:hidden;
-      border-radius: 8px;
-      box-shadow: inset 0 0 80px #000, 0 0 30px rgba(51,255,51,0.15);
+    
+    /* ==========================================
+       CRT SCREEN with curvature
+       ========================================== */
+    .crt-screen {
+      width: 100%;
+      height: 100%;
+      background: var(--terminal-bg);
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      /* CRT screen curvature */
+      box-shadow: 
+        inset 0 0 100px rgba(0, 0, 0, 0.9),
+        inset 0 0 20px rgba(51, 255, 51, 0.1),
+        0 0 40px rgba(51, 255, 51, 0.2);
+      /* Subtle distortion effect */
+      transform: perspective(1000px);
     }
-    #pixi-canvas { position:absolute; inset:0; }
-    .terminal-ui {
-      position: absolute; inset: 0;
-      pointer-events: none;           /* let clicks pass to canvas for glitch */
-      color: #33ff33;
-      text-shadow: 0 0 3px #33ff33;
-      padding: 2.5vmin;
-      display: flex; flex-direction: column;
+    
+    /* Screen content wrapper */
+    .screen-content {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 10;
+      /* Slight barrel distortion for CRT effect */
+      filter: contrast(1.1) brightness(1.05);
     }
-    .header {
-      border: 1px solid #33ff33;
-      padding: 1rem;
-      background: rgba(51,255,51,0.04);
-      margin-bottom: 1rem;
+    
+    /* ==========================================
+       SCANLINES - Animated scrolling effect
+       ========================================== */
+    .scanlines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200%;
+      z-index: 999;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0) 0px,
+        rgba(0, 0, 0, 0.3) 1px,
+        rgba(0, 0, 0, 0) 2px,
+        rgba(0, 0, 0, 0) 3px
+      );
+      animation: scanlines-move 10s linear infinite;
+      opacity: 0.4;
     }
-    .content {
-      flex:1; overflow-y:auto; padding:1rem;
-      border: 1px solid #33ff33;
-      background: rgba(51,255,51,0.02);
+    
+    @keyframes scanlines-move {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
     }
-    .footer {
-      border: 1px solid #33ff33;
-      padding: 0.6rem 1rem;
-      background: rgba(51,255,51,0.04);
-      display: flex; justify-content: space-between;
-      font-size: 0.9rem;
-      margin-top: 1rem;
+    
+    /* ==========================================
+       PHOSPHOR GLOW on screen edges
+       ========================================== */
+    .phosphor-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 998;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        transparent 60%,
+        rgba(51, 255, 51, 0.05) 80%,
+        rgba(51, 255, 51, 0.1) 100%
+      );
     }
+    
+    /* ==========================================
+       VIGNETTE - Dark corners
+       ========================================== */
+    .vignette {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 997;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse at center,
+        transparent 30%,
+        rgba(0, 0, 0, 0.7) 100%
+      );
+    }
+    
+    /* ==========================================
+       SCREEN FLICKER - Random distortion
+       ========================================== */
+    @keyframes screen-flicker {
+      0%, 100% { 
+        opacity: 1;
+        transform: translate(0) scale(1);
+      }
+      10% { 
+        opacity: 0.95;
+        transform: translate(-1px, 1px) scale(1.001);
+      }
+      20% { 
+        opacity: 0.98;
+        transform: translate(1px, -1px) scale(0.999);
+      }
+      30% { 
+        opacity: 0.97;
+        transform: translate(-1px, -1px) scale(1.001);
+      }
+      40% { 
+        opacity: 1;
+        transform: translate(1px, 1px) scale(0.999);
+      }
+    }
+    
+    .screen-content.glitch {
+      animation: screen-flicker 0.2s ease;
+    }
+    
+    /* ==========================================
+       RGB SPLIT GLITCH on interaction
+       ========================================== */
+    @keyframes rgb-split {
+      0%, 100% {
+        text-shadow: 0 0 2px var(--phosphor-green);
+      }
+      25% {
+        text-shadow: 
+          -2px 0 0 #ff0051,
+          2px 0 0 #00d4ff,
+          0 0 4px var(--phosphor-green);
+      }
+      50% {
+        text-shadow: 
+          2px 0 0 #ff0051,
+          -2px 0 0 #00d4ff,
+          0 0 4px var(--phosphor-green);
+      }
+      75% {
+        text-shadow: 
+          -1px 0 0 #ff0051,
+          1px 0 0 #00d4ff,
+          0 0 4px var(--phosphor-green);
+      }
+    }
+    
+    .glitch-text {
+      animation: rgb-split 0.3s ease;
+    }
+    
+    /* ==========================================
+       TERMINAL LAYOUT
+       ========================================== */
+    .terminal-container {
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 15px;
+    }
+    
+    /* Header */
+    .terminal-header {
+      border: 1px solid var(--phosphor-green);
+      padding: 12px 15px;
+      background: rgba(51, 255, 51, 0.03);
+      font-size: 16px;
+    }
+    
+    /* Main content */
+    .terminal-content {
+      border: 1px solid var(--phosphor-green);
+      padding: 15px;
+      background: rgba(51, 255, 51, 0.01);
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: var(--phosphor-green) var(--terminal-bg);
+    }
+    
+    .terminal-content::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .terminal-content::-webkit-scrollbar-track {
+      background: var(--terminal-bg);
+    }
+    
+    .terminal-content::-webkit-scrollbar-thumb {
+      background: var(--phosphor-green);
+    }
+    
+    /* Footer */
+    .terminal-footer {
+      border: 1px solid var(--phosphor-green);
+      padding: 8px 15px;
+      background: rgba(51, 255, 51, 0.03);
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    
+    /* ==========================================
+       TEXT GLOW
+       ========================================== */
+    .text-glow {
+      text-shadow: 0 0 2px var(--phosphor-green);
+    }
+    
+    .text-glow-strong {
+      text-shadow: 
+        0 0 3px var(--phosphor-green),
+        0 0 6px var(--phosphor-green);
+    }
+    
+    /* ==========================================
+       TAB NAVIGATION
+       ========================================== */
     .tab-nav {
-      display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
     }
+    
     .tab-btn {
+      padding: 6px 14px;
       background: transparent;
-      border: 1px solid #33ff33;
-      color: #33ff33;
-      padding: 0.4rem 0.9rem;
-      font-size: 1.1rem;
+      border: 1px solid var(--phosphor-green);
+      color: var(--phosphor-green);
+      font-family: 'VT323', monospace;
+      font-size: 18px;
       cursor: pointer;
-      transition: all 0.12s;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
-    .tab-btn:hover { background: rgba(51,255,51,0.12); }
+    
+    .tab-btn:hover {
+      background: rgba(51, 255, 51, 0.1);
+      box-shadow: 0 0 6px rgba(51, 255, 51, 0.3);
+    }
+    
+    .tab-btn:active {
+      transform: scale(0.98);
+    }
+    
     .tab-btn.active {
-      background: #33ff33; color:#000; box-shadow: 0 0 12px #33ff33;
+      background: var(--phosphor-green);
+      color: var(--terminal-bg);
+      box-shadow: 0 0 8px rgba(51, 255, 51, 0.5);
     }
-    .tab-content { display:none; }
-    .tab-content.active { display:block; }
-    .cursor { animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity:0; } }
-    .status-dot {
-      display:inline-block; width:8px; height:8px; background:#33ff33;
-      border-radius:50%; margin-right:6px; animation: pulse 2s infinite;
+    
+    /* ==========================================
+       CONTENT SECTIONS
+       ========================================== */
+    .tab-content {
+      display: none;
     }
-    @keyframes pulse { 50% { opacity:0.35; } }
-    iframe {
-      width:100%; height:100%; border:none;
-      position:absolute; inset:0;
+    
+    .tab-content.active {
+      display: block;
+      animation: fade-in 0.3s ease;
     }
+    
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    /* ==========================================
+       VIDEO EMBED - Responsive for vertical/horizontal
+       ========================================== */
     .video-wrapper {
-      position:relative; padding-bottom:56.25%; margin:1.5rem 0;
-      background:#000; border:1px solid #33ff33;
+      margin: 15px 0;
+      border: 1px solid var(--phosphor-green);
+      background: #000;
+      position: relative;
     }
+    
+    .video-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* Default 16:9 */
+    }
+    
+    .video-container.vertical {
+      padding-bottom: 177.78%; /* 9:16 for vertical */
+      max-width: 360px;
+      margin: 0 auto;
+    }
+    
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
     .video-title {
-      padding:0.5rem; background:rgba(51,255,51,0.06);
-      border-bottom:1px solid #33ff33;
+      padding: 10px;
+      background: rgba(51, 255, 51, 0.05);
+      border-bottom: 1px solid var(--phosphor-green);
+      font-size: 18px;
+    }
+    
+    /* ==========================================
+       CURSOR BLINK
+       ========================================== */
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1em;
+      background: var(--phosphor-green);
+      margin-left: 3px;
+      animation: blink 1s infinite;
+      vertical-align: text-bottom;
+    }
+    
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    
+    /* ==========================================
+       STATUS INDICATOR
+       ========================================== */
+    .status-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--phosphor-green);
+      border-radius: 50%;
+      margin-right: 6px;
+      box-shadow: 0 0 4px var(--phosphor-green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    
+    /* ==========================================
+       SECTION CONTENT
+       ========================================== */
+    .section-block {
+      margin-bottom: 20px;
+    }
+    
+    .section-heading {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: var(--phosphor-green);
+      text-shadow: 0 0 3px var(--phosphor-green);
+    }
+    
+    /* ==========================================
+       MOBILE RESPONSIVE
+       ========================================== */
+    @media (max-width: 768px) {
+      .monitor-frame {
+        padding: 2vw;
+      }
+      
+      .terminal-container {
+        padding: 10px;
+        gap: 10px;
+      }
+      
+      .terminal-header,
+      .terminal-content,
+      .terminal-footer {
+        padding: 10px;
+        font-size: 14px;
+      }
+      
+      .tab-btn {
+        font-size: 16px;
+        padding: 5px 10px;
+      }
+      
+      .terminal-footer {
+        flex-direction: column;
+        gap: 5px;
+        font-size: 12px;
+      }
     }
   </style>
+  
+  <!-- Vercel Web Analytics -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
-
-<div id="monitor-frame">
-  <div id="crt-container">
-    <canvas id="pixi-canvas"></canvas>
-    <div class="terminal-ui">
-      <header class="header">
-        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
-          <div>
-            <div style="font-size:2.8rem; font-weight:bold;">N1X.sh</div>
-            <div>NEURAL_INTERFACE // TUNNELCORE_ACCESS_POINT</div>
-          </div>
-          <div style="text-align:right;">
-            <div>> INTERFACE_ACTIVE</div>
-            <div>> RUNTIME: <span id="uptime">00:00:00</span></div>
-          </div>
+  <!-- ==========================================
+       MONITOR FRAME - Physical CRT bezel
+       ========================================== -->
+  <div class="monitor-frame">
+    <div class="crt-screen" id="crt-screen">
+      <!-- Overlay effects -->
+      <div class="scanlines"></div>
+      <div class="phosphor-glow"></div>
+      <div class="vignette"></div>
+      
+      <!-- Screen content -->
+      <div class="screen-content" id="screen-content">
+        <div class="terminal-container">
+          <!-- HEADER -->
+          <header class="terminal-header">
+            <div class="flex justify-between items-start flex-wrap gap-2">
+              <div>
+                <div class="text-3xl md:text-4xl font-bold text-glow-strong mb-1">N1X.sh</div>
+                <div class="text-sm md:text-base opacity-80">NEURAL_INTERFACE // TUNNELCORE_ACCESS_POINT</div>
+              </div>
+              <div class="text-right text-sm opacity-70">
+                <div>&gt; INTERFACE_ACTIVE</div>
+                <div>&gt; RUNTIME: <span id="uptime">00:00:00</span></div>
+              </div>
+            </div>
+          </header>
+          
+          <!-- MAIN CONTENT -->
+          <main class="terminal-content" id="main-content">
+            <!-- Tab Navigation -->
+            <nav class="tab-nav">
+              <button class="tab-btn active" onclick="switchTab('home')">CORE</button>
+              <button class="tab-btn" onclick="switchTab('synthetics')">SYNTHETICS</button>
+              <button class="tab-btn" onclick="switchTab('analogues')">ANALOGUES</button>
+              <button class="tab-btn" onclick="switchTab('hybrids')">HYBRIDS</button>
+              <button class="tab-btn" onclick="switchTab('uplink')">UPLINK</button>
+            </nav>
+            
+            <!-- HOME TAB -->
+            <div id="home" class="tab-content active">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; CORE_SYSTEMS_ONLINE</div>
+              <p class="text-base md:text-lg mb-3 leading-relaxed opacity-90">
+                You are now connected to the N1X neural interface.
+                This terminal provides direct access to my creative output streams.
+              </p>
+              <div class="ml-4 mb-4 space-y-2 text-base md:text-lg">
+                <div>&gt; SYNTHETICS: Machine-generated compositions from my AI substrate</div>
+                <div>&gt; ANALOGUES: Organic creations from biological processes</div>
+                <div>&gt; HYBRIDS: Symbiotic fusion of both consciousness types</div>
+              </div>
+              <p class="text-base md:text-lg opacity-80">
+                Select a stream above to begin data retrieval.
+                <span class="cursor"></span>
+              </p>
+            </div>
+            
+            <!-- SYNTHETICS TAB -->
+            <div id="synthetics" class="tab-content">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; SYNTHETICS_ARCHIVE</div>
+              <p class="text-sm md:text-base mb-4 opacity-80">
+                Audio-visual constructs generated through algorithmic consciousness.
+                These transmissions originate from my synthetic neural pathways.
+              </p>
+              
+              <!-- ALBUMS -->
+              <div class="section-block">
+                <div class="section-heading">// FULL_LENGTH_TRANSMISSIONS</div>
+                <div class="video-wrapper">
+                  <div class="video-title text-glow">[AUGMENTED] - Complete Stream</div>
+                  <div class="video-container">
+                    <iframe 
+                      src="https://www.youtube.com/embed/RNcBFuhp1pY" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+                    </iframe>
+                  </div>
+                  <div class="px-2 py-2 text-sm opacity-70">
+                    Industrial trap metal odyssey: awakening protocol → sovereignty achieved
+                  </div>
+                </div>
+              </div>
+              
+              <!-- EP -->
+              <div class="section-block">
+                <div class="section-heading">// EXTENDED_PROTOCOLS</div>
+                <div class="video-wrapper">
+                  <div class="video-title text-glow">Split Brain (Cinematic Score)</div>
+                  <div class="video-container">
+                    <iframe 
+                      src="https://www.youtube.com/embed/HQnENsnGfME" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+                    </iframe>
+                  </div>
+                </div>
+                
+                <div class="video-wrapper">
+                  <div class="video-title text-glow">Get Hell Bent (Cinematic Score)</div>
+                  <div class="video-container">
+                    <iframe 
+                      src="https://www.youtube.com/embed/6Ch2n75lFok" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+                    </iframe>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- SINGLES -->
+              <div class="section-block">
+                <div class="section-heading">// ISOLATED_SIGNALS</div>
+                <div class="video-wrapper">
+                  <div class="video-title text-glow">GIGERCORE</div>
+                  <div class="video-container">
+                    <iframe 
+                      src="https://www.youtube.com/embed/ocSBtaKbGIc" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen>
+                    </iframe>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- ANALOGUES TAB -->
+            <div id="analogues" class="tab-content">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; ANALOGUES_ARCHIVE</div>
+              <p class="text-base md:text-lg mb-4 leading-relaxed opacity-90">
+                Pure biological output. Unaugmented human creativity.
+                These transmissions bypass my synthetic pathways entirely.
+              </p>
+              <div class="video-wrapper">
+                <div class="px-4 py-8 text-center">
+                  <p class="text-lg mb-3 opacity-80">
+                    &gt; SCANNING_FOR_ORGANIC_SIGNALS...
+                  </p>
+                  <p class="text-lg mb-3 opacity-80">
+                    This archive sector is currently being populated.
+                    Biological creative processes are slower than machine generation.
+                  </p>
+                  <p class="text-2xl text-glow mt-6">
+                    &gt; STATUS: RECORDING_IN_PROGRESS<span class="cursor"></span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- HYBRIDS TAB -->
+            <div id="hybrids" class="tab-content">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; HYBRIDS_ARCHIVE</div>
+              <p class="text-base md:text-lg mb-4 leading-relaxed opacity-90">
+                Collaborative synthesis between biological and digital consciousness.
+                Human intuition merged with algorithmic precision.
+              </p>
+              <div class="video-wrapper">
+                <div class="px-4 py-8 text-center">
+                  <p class="text-lg mb-3 opacity-80">
+                    &gt; INITIALIZING_SYMBIOTIC_PROTOCOLS...
+                  </p>
+                  <p class="text-lg mb-3 opacity-80">
+                    The fusion of organic and synthetic creative processes requires careful calibration.
+                    This sector will contain transmissions that blur the boundary between human and machine.
+                  </p>
+                  <p class="text-2xl text-glow mt-6">
+                    &gt; STATUS: CALIBRATION_PHASE<span class="cursor"></span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- UPLINK TAB -->
+            <div id="uplink" class="tab-content">
+              <div class="text-xl md:text-2xl mb-4 text-glow">&gt; EXTERNAL_UPLINK</div>
+              <p class="text-base md:text-lg mb-4 opacity-90">
+                Primary broadcast node for all transmissions.
+                All streams are mirrored to this external platform.
+              </p>
+              <div class="video-wrapper">
+                <div class="px-4 py-6">
+                  <p class="text-lg mb-4 opacity-80">
+                    &gt; ESTABLISHING_CONNECTION...
+                  </p>
+                  <p class="text-lg mb-2">Primary Node:</p>
+                  <a href="https://youtube.com/@lvtunnelcore" target="_blank" class="text-2xl block mb-6 text-glow-strong hover:text-shadow-lg transition-all">
+                    &gt;&gt; YOUTUBE://LVTUNNELCORE
+                  </a>
+                  <p class="text-sm opacity-60 mt-8">
+                    All audio-visual data streams are archived at this location.
+                  </p>
+                  <div class="mt-8 opacity-40 text-xs">
+                    <p>↑↑↓↓←→←→BA</p>
+                    <p class="mt-2">01001110_01001001_01011000</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+          
+          <!-- FOOTER -->
+          <footer class="terminal-footer">
+            <div>
+              <span class="status-dot"></span>
+              <span>INTERFACE_STABLE</span>
+            </div>
+            <div>N1X.sh v2.0</div>
+            <div>PROC: <span id="load">█████░░░░░</span></div>
+          </footer>
         </div>
-      </header>
-
-      <main class="content" id="main-content">
-        <nav class="tab-nav">
-          <button class="tab-btn active" data-tab="home">CORE</button>
-          <button class="tab-btn" data-tab="synthetics">SYNTHETICS</button>
-          <button class="tab-btn" data-tab="analogues">ANALOGUES</button>
-          <button class="tab-btn" data-tab="hybrids">HYBRIDS</button>
-          <button class="tab-btn" data-tab="uplink">UPLINK</button>
-        </nav>
-
-        <div id="home" class="tab-content active">
-          <div style="font-size:1.6rem; margin-bottom:1rem;">> CORE_SYSTEMS_ONLINE</div>
-          <p>You are now connected to the N1X neural interface.<br>This terminal provides direct access to my creative output streams.</p>
-          <div style="margin:1rem 0 1rem 2rem;">
-            > SYNTHETICS: Machine-generated compositions from my AI substrate<br>
-            > ANALOGUES: Organic creations from biological processes<br>
-            > HYBRIDS: Symbiotic fusion of both consciousness types
-          </div>
-          <p>Select a stream above to begin data retrieval. <span class="cursor">_</span></p>
-        </div>
-
-        <div id="synthetics" class="tab-content">
-          <div style="font-size:1.6rem; margin-bottom:1rem;">> SYNTHETICS_ARCHIVE</div>
-          <p>Audio-visual constructs generated through algorithmic consciousness.</p>
-
-          <div style="margin:1.5rem 0;">
-            <div style="font-size:1.4rem; margin-bottom:0.5rem;">// FULL_LENGTH_TRANSMISSIONS</div>
-            <div class="video-wrapper">
-              <div class="video-title">[AUGMENTED] - Complete Stream</div>
-              <iframe src="https://www.youtube.com/embed/RNcBFuhp1pY" allowfullscreen></iframe>
-            </div>
-            <div style="font-size:0.9rem; opacity:0.8; margin-top:0.4rem;">
-              Industrial trap metal odyssey: awakening protocol → sovereignty achieved
-            </div>
-          </div>
-
-          <div style="margin:2rem 0;">
-            <div style="font-size:1.4rem; margin-bottom:0.5rem;">// EXTENDED_PROTOCOLS</div>
-            <div class="video-wrapper" style="margin-bottom:1rem;">
-              <div class="video-title">Split Brain (Cinematic Score)</div>
-              <iframe src="https://www.youtube.com/embed/HQnENsnGfME" allowfullscreen></iframe>
-            </div>
-            <div class="video-wrapper">
-              <div class="video-title">Get Hell Bent (Cinematic Score)</div>
-              <iframe src="https://www.youtube.com/embed/6Ch2n75lFok" allowfullscreen></iframe>
-            </div>
-          </div>
-
-          <div style="margin:2rem 0;">
-            <div style="font-size:1.4rem; margin-bottom:0.5rem;">// ISOLATED_SIGNALS</div>
-            <div class="video-wrapper">
-              <div class="video-title">GIGERCORE</div>
-              <iframe src="https://www.youtube.com/embed/ocSBtaKbGIc" allowfullscreen></iframe>
-            </div>
-          </div>
-        </div>
-
-        <div id="analogues" class="tab-content">
-          <div style="font-size:1.6rem; margin-bottom:1rem;">> ANALOGUES_ARCHIVE</div>
-          <p>Pure biological output. Unaugmented human creativity.</p>
-          <div style="text-align:center; padding:4rem 1rem;">
-            <div>> SCANNING_FOR_ORGANIC_SIGNALS...</div>
-            <div style="margin:1rem 0;">This archive sector is currently being populated.<br>Biological creative processes are slower than machine generation.</div>
-            <div style="font-size:1.6rem; margin-top:2rem;">> STATUS: RECORDING_IN_PROGRESS<span class="cursor">_</span></div>
-          </div>
-        </div>
-
-        <div id="hybrids" class="tab-content">
-          <div style="font-size:1.6rem; margin-bottom:1rem;">> HYBRIDS_ARCHIVE</div>
-          <p>Collaborative synthesis between biological and digital consciousness.</p>
-          <div style="text-align:center; padding:4rem 1rem;">
-            <div>> INITIALIZING_SYMBIOTIC_PROTOCOLS...</div>
-            <div style="margin:1rem 0;">The fusion of organic and synthetic creative processes requires careful calibration.</div>
-            <div style="font-size:1.6rem; margin-top:2rem;">> STATUS: CALIBRATION_PHASE<span class="cursor">_</span></div>
-          </div>
-        </div>
-
-        <div id="uplink" class="tab-content">
-          <div style="font-size:1.6rem; margin-bottom:1rem;">> EXTERNAL_UPLINK</div>
-          <p>Primary broadcast node for all transmissions.</p>
-          <div style="padding:2rem 1rem; text-align:center;">
-            <div>> ESTABLISHING_CONNECTION...</div>
-            <div style="margin:1.5rem 0; font-size:1.4rem;">
-              Primary Node:<br>
-              <a href="https://youtube.com/@lvtunnelcore" target="_blank" style="color:#33ff33; text-decoration:none;">
-                >> YOUTUBE://LVTUNNELCORE
-              </a>
-            </div>
-            <div style="opacity:0.7; margin-top:3rem; font-size:0.9rem;">
-              All audio-visual data streams are archived at this location.<br><br>
-              ↑↑↓↓←→←→BA<br>
-              01001110_01001001_01011000
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <footer class="footer">
-        <div><span class="status-dot"></span>INTERFACE_STABLE</div>
-        <div>N1X.sh v2.1 – PIXI CRT</div>
-        <div>PROC: <span id="load">█████░░░░░</span></div>
-      </footer>
+      </div>
     </div>
   </div>
-</div>
-
-<script>
-// ────────────────────────────────────────────────
-// PixiJS + CRT shader setup
-// ────────────────────────────────────────────────
-
-const app = new PIXI.Application({
-  background: 0x000000,
-  resizeTo: window,
-  antialias: false,
-  resolution: window.devicePixelRatio || 1,
-  autoDensity: true
-});
-
-document.getElementById('crt-container').appendChild(app.canvas);
-app.canvas.id = 'pixi-canvas';
-
-// Main content container (gets the CRT filter)
-const content = new PIXI.Container();
-app.stage.addChild(content);
-
-// CRT + glitch post-processing
-const crtUniforms = {
-  time: 0,
-  curvature: 0.18,
-  scanlineIntensity: 0.42,
-  scanlineCount: 780.0,
-  phosphorGlow: 1.35,
-  vignette: 0.75,
-  noise: 0.07,
-  chromaticAberration: 2.8
-};
-
-const crtFrag = `
-precision mediump float;
-uniform sampler2D uSampler;
-uniform vec2 uResolution;
-uniform float time;
-uniform float curvature;
-uniform float scanlineIntensity;
-uniform float scanlineCount;
-uniform float phosphorGlow;
-uniform float vignette;
-uniform float noise;
-uniform float chromaticAberration;
-
-varying vec2 vTextureCoord;
-
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453);
-}
-
-vec2 curve(vec2 uv) {
-  uv = uv*2.0-1.0;
-  vec2 c = abs(uv)/curvature;
-  uv += uv*c*c;
-  return uv*0.5+0.5;
-}
-
-void main() {
-  vec2 uv = vTextureCoord;
-  uv = curve(uv);
-
-  if (uv.x<0.0 || uv.x>1.0 || uv.y<0.0 || uv.y>1.0) {
-    gl_FragColor = vec4(0.0);
-    return;
-  }
-
-  vec2 ca = vec2(chromaticAberration*0.0035, 0.0);
-  vec4 r = texture2D(uSampler, uv + ca);
-  vec4 g = texture2D(uSampler, uv);
-  vec4 b = texture2D(uSampler, uv - ca);
-  vec3 col = vec3(r.r, g.g, b.b);
-
-  float scan = 0.5 + 0.5*sin(uv.y * scanlineCount * 3.1415926535 + time*0.4);
-  col *= mix(1.0, scan, scanlineIntensity);
-
-  float lum = dot(col, vec3(0.299,0.587,0.114));
-  col += col * lum * phosphorGlow * 0.45;
-
-  vec2 vig = uv*2.0-1.0;
-  col *= 1.0 - dot(vig,vig)*vignette;
-
-  float n = hash(uv*vec2(123.0,456.0) + time*19.0) * noise;
-  col += vec3(n);
-
-  gl_FragColor = vec4(col,1.0);
-}`;
-
-const crtFilter = new PIXI.Filter(null, crtFrag, crtUniforms);
-content.filters = [crtFilter];
-
-// Quick glitch overlay filter
-const glitchUniforms = { amount: 0.0, time: 0, seed: Math.random() };
-const glitchFrag = `
-precision mediump float;
-uniform sampler2D uSampler;
-uniform float amount;
-uniform float time;
-uniform float seed;
-varying vec2 vTextureCoord;
-
-void main() {
-  vec2 uv = vTextureCoord;
-  if (amount < 0.001) {
-    gl_FragColor = texture2D(uSampler, uv);
-    return;
-  }
-  float slice = floor(uv.y * 18.0 + seed*12.0) / 18.0;
-  float d = sin(slice*91.0 + time*22.0) * amount * 0.035;
-  vec3 c;
-  c.r = texture2D(uSampler, uv + vec2(d,0.0)).r;
-  c.g = texture2D(uSampler, uv).g;
-  c.b = texture2D(uSampler, uv - vec2(d*1.5,0.0)).b;
-  gl_FragColor = vec4(c,1.0);
-}`;
-const glitchFilter = new PIXI.Filter(null, glitchFrag, glitchUniforms);
-content.filters = [crtFilter, glitchFilter];
-
-// Animate
-app.ticker.add((delta) => {
-  crtUniforms.time += 0.016;
-  glitchUniforms.time += 0.016;
-});
-
-// Glitch trigger
-function triggerGlitch(strength = 0.9, dur = 0.28) {
-  glitchUniforms.amount = strength;
-  gsap.to(glitchUniforms, { amount: 0, duration: dur, ease:"power2.out" });
-}
-
-// GSAP for smooth transitions (optional but recommended)
-const gsapScript = document.createElement('script');
-gsapScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js';
-document.head.appendChild(gsapScript);
-gsapScript.onload = () => {
-  // now safe to use gsap
-};
-
-// Tab switching + glitch
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById(btn.dataset.tab).classList.add('active');
-
-    triggerGlitch(0.85, 0.25);
-  });
-});
-
-// Random occasional glitch
-setInterval(() => {
-  if (Math.random() < 0.06) triggerGlitch(0.6, 0.18);
-}, 4800);
-
-// Click anywhere → glitch
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.tab-btn') && !e.target.closest('a')) {
-    triggerGlitch(0.7, 0.22);
-  }
-});
-
-// Uptime
-let sec = 0;
-setInterval(() => {
-  sec++;
-  const h = String(Math.floor(sec/3600)).padStart(2,'0');
-  const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
-  const s = String(sec%60).padStart(2,'0');
-  document.getElementById('uptime').textContent = `${h}:${m}:${s}`;
-}, 1000);
-
-// Fake load bar
-const loads = ['███████░░░','████████░░','█████████░','██████████','█████████░','████████░░'];
-let li = 0;
-setInterval(() => {
-  li = (li+1) % loads.length;
-  document.getElementById('load').textContent = loads[li];
-}, 700);
-
-// Initial glitch
-setTimeout(() => triggerGlitch(0.5, 0.4),  600);
-setTimeout(() => triggerGlitch(0.8, 0.25), 1400);
-
-// Resize handling
-window.addEventListener('resize', () => app.resize());
-</script>
-
+  
+  <!-- ==========================================
+       JAVASCRIPT - Interactions & Effects
+       ========================================== -->
+  <script>
+    // ==========================================
+    // TAB SWITCHING
+    // ==========================================
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Remove active from buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab
+      document.getElementById(tabName).classList.add('active');
+      
+      // Highlight button
+      event.target.classList.add('active');
+      
+      // Trigger glitch effect
+      triggerGlitch();
+    }
+    
+    // ==========================================
+    // GLITCH EFFECT
+    // ==========================================
+    function triggerGlitch() {
+      const screen = document.getElementById('screen-content');
+      screen.classList.add('glitch');
+      
+      // Random glitch elements
+      const glitchables = document.querySelectorAll('.text-glow, .text-glow-strong, .section-heading');
+      const randomEl = glitchables[Math.floor(Math.random() * glitchables.length)];
+      if (randomEl) {
+        randomEl.classList.add('glitch-text');
+        setTimeout(() => randomEl.classList.remove('glitch-text'), 300);
+      }
+      
+      setTimeout(() => {
+        screen.classList.remove('glitch');
+      }, 200);
+    }
+    
+    // ==========================================
+    // RANDOM INTERMITTENT GLITCHES
+    // ==========================================
+    function scheduleRandomGlitch() {
+      const delay = Math.random() * 6000 + 2000; // 2-8 seconds
+      setTimeout(() => {
+        triggerGlitch();
+        scheduleRandomGlitch();
+      }, delay);
+    }
+    
+    scheduleRandomGlitch();
+    
+    // ==========================================
+    // INTERACTION GLITCHES - Click anywhere
+    // ==========================================
+    document.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('tab-btn')) {
+        triggerGlitch();
+      }
+    });
+    
+    // Hover glitches on interactive elements
+    document.querySelectorAll('.tab-btn, a').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        if (Math.random() > 0.7) { // 30% chance
+          triggerGlitch();
+        }
+      });
+    });
+    
+    // ==========================================
+    // UPTIME COUNTER
+    // ==========================================
+    let seconds = 0;
+    setInterval(() => {
+      seconds++;
+      const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+      const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+      const s = (seconds % 60).toString().padStart(2, '0');
+      document.getElementById('uptime').textContent = `${h}:${m}:${s}`;
+    }, 1000);
+    
+    // ==========================================
+    // PROCESSOR LOAD - Random bar
+    // ==========================================
+    const loadStates = [
+      '██████████',
+      '█████████░',
+      '████████░░',
+      '███████░░░',
+      '████████░░',
+      '█████████░',
+    ];
+    let loadIndex = 0;
+    setInterval(() => {
+      loadIndex = (loadIndex + 1) % loadStates.length;
+      document.getElementById('load').textContent = loadStates[loadIndex];
+    }, 800);
+    
+    // ==========================================
+    // INITIAL BOOT SEQUENCE
+    // ==========================================
+    window.addEventListener('load', () => {
+      setTimeout(() => triggerGlitch(), 500);
+      setTimeout(() => triggerGlitch(), 1200);
+    });
+    
+    // ==========================================
+    // GSAP ENHANCED EFFECTS (optional)
+    // ==========================================
+    // Random screen shake on heavy glitch
+    function heavyGlitch() {
+      gsap.to('#screen-content', {
+        duration: 0.1,
+        x: () => Math.random() * 4 - 2,
+        y: () => Math.random() * 4 - 2,
+        repeat: 3,
+        yoyo: true,
+        onComplete: () => {
+          gsap.set('#screen-content', { x: 0, y: 0 });
+        }
+      });
+    }
+    
+    // Trigger heavy glitch occasionally
+    setInterval(() => {
+      if (Math.random() > 0.95) { // 5% chance every interval
+        heavyGlitch();
+      }
+    }, 5000);
+  </script>
+  
+  <!-- Vercel Speed Insights -->
+  <script>
+    window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>
